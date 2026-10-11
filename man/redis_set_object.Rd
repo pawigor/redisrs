@@ -18,8 +18,20 @@ redis_get_object(con, key)
 
 \item{ex}{Expiry in seconds, or \code{NULL} for no expiry.}
 }
+\value{
+\code{redis_set_object()} returns \code{NULL}, invisibly. \code{redis_get_object()}
+returns the stored R object, or \code{NULL} if the key does not exist.
+}
 \description{
 \code{redis_set_object()} stores \code{serialize(value)}. \code{redis_get_object()} reads
 the bytes and calls \code{unserialize()}. Only read keys that you wrote with
 \code{redis_set_object()}: \code{unserialize()} on untrusted data is not safe.
+}
+\examples{
+\dontshow{if (identical(Sys.getenv("REDISRS_EXAMPLES"), "true")) withAutoprint(\{ # examplesIf}
+con <- redis_connect("redis://localhost:6379")
+redis_set_object(con, "cars", head(mtcars), ex = 60)
+redis_get_object(con, "cars")
+redis_close(con)
+\dontshow{\}) # examplesIf}
 }

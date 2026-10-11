@@ -20,3 +20,16 @@ In cluster mode, one failed command can fail the whole pipeline.
 \description{
 Run several commands in one round trip
 }
+\details{
+After a connection error, the whole pipeline is sent once more on
+a new connection. If the first attempt reached the server, commands such
+as \code{INCR} run twice.
+}
+\examples{
+\dontshow{if (identical(Sys.getenv("REDISRS_EXAMPLES"), "true")) withAutoprint(\{ # examplesIf}
+con <- redis_connect("redis://localhost:6379")
+redis_pipeline(con, list(c("SET", "n", "1"), c("INCR", "n"), c("GET", "n")))
+redis_cmd(con, "DEL", "n")
+redis_close(con)
+\dontshow{\}) # examplesIf}
+}

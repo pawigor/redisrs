@@ -1,5 +1,8 @@
 name: R-CMD-check
 on: [push, pull_request]
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ${{ matrix.os }}
@@ -10,13 +13,14 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
         with:
+          toolchain: stable
           targets: ${{ runner.os == 'Windows' && 'x86_64-pc-windows-gnu' || '' }}
-      - uses: r-lib/actions/setup-pandoc@v2
-      - uses: r-lib/actions/setup-r@v2
-      - uses: r-lib/actions/setup-r-dependencies@v2
+      - uses: r-lib/actions/setup-pandoc@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
+      - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
+      - uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
         with:
           extra-packages: any::rcmdcheck
           needs: check
@@ -35,7 +39,7 @@ jobs:
           docker compose -f tests/servers/docker-compose.yml up -d
           timeout 60 sh -c 'until docker compose -f tests/servers/docker-compose.yml exec -T cluster valkey-cli -p 7000 cluster info | grep -q cluster_state:ok; do sleep 1; done'
           echo "REDISRS_TEST_SERVERS=true" >> "$GITHUB_ENV"
-      - uses: r-lib/actions/check-r-package@v2
+      - uses: r-lib/actions/check-r-package@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
       - name: Rust unit tests
         if: runner.os == 'Linux'
         # The test binary loads libR.so at run time, and the runner's R is not

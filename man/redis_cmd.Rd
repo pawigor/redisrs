@@ -26,3 +26,12 @@ After a connection error the command is sent once more on a new
 connection. If the first attempt reached the server, a command such as
 \code{INCR} runs twice.
 }
+\examples{
+\dontshow{if (identical(Sys.getenv("REDISRS_EXAMPLES"), "true")) withAutoprint(\{ # examplesIf}
+con <- redis_connect("redis://localhost:6379")
+redis_cmd(con, "SET", "greeting", "hello")
+redis_cmd(con, "GET", "greeting")
+redis_cmd(con, "DEL", "greeting")
+redis_close(con)
+\dontshow{\}) # examplesIf}
+}

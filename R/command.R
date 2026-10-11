@@ -10,6 +10,12 @@
 #'   After a connection error the command is sent once more on a new
 #'   connection. If the first attempt reached the server, a command such as
 #'   `INCR` runs twice.
+#' @examplesIf identical(Sys.getenv("REDISRS_EXAMPLES"), "true")
+#' con <- redis_connect("redis://localhost:6379")
+#' redis_cmd(con, "SET", "greeting", "hello")
+#' redis_cmd(con, "GET", "greeting")
+#' redis_cmd(con, "DEL", "greeting")
+#' redis_close(con)
 #' @export
 redis_cmd <- function(con, ...) {
   call <- sys.call()

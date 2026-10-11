@@ -9,6 +9,16 @@ redis_close(con)
 \arguments{
 \item{con}{A connection from \code{\link[=redis_connect]{redis_connect()}}.}
 }
+\value{
+\code{NULL}, invisibly. After the call, \code{con} is closed, and each
+function that uses it gives a \code{redis_usage_error}.
+}
 \description{
 Close a connection
+}
+\examples{
+\dontshow{if (identical(Sys.getenv("REDISRS_EXAMPLES"), "true")) withAutoprint(\{ # examplesIf}
+con <- redis_connect("redis://localhost:6379")
+redis_close(con)
+\dontshow{\}) # examplesIf}
 }

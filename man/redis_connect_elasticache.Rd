@@ -37,3 +37,16 @@ connect and reconnect.
 \description{
 Connect to AWS ElastiCache or MemoryDB with IAM
 }
+\examples{
+\dontshow{if (interactive() && nzchar(Sys.getenv("REDISRS_EC_ENDPOINT"))) withAutoprint(\{ # examplesIf}
+con <- redis_connect_elasticache(
+  endpoint = Sys.getenv("REDISRS_EC_ENDPOINT"),
+  cache_name = Sys.getenv("REDISRS_EC_CACHE"),
+  user_id = Sys.getenv("REDISRS_EC_USER"),
+  region = Sys.getenv("REDISRS_EC_REGION"),
+  cluster = TRUE, serverless = TRUE
+)
+redis_cmd(con, "PING")
+redis_close(con)
+\dontshow{\}) # examplesIf}
+}
