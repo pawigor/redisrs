@@ -33,6 +33,10 @@ if (!is_not_cran) {
   ""
 )
 
+# the CRAN build uses the committed R/extendr-wrappers.R and does not
+# run the `document` binary
+.gen_wrappers <- ifelse(!is_not_cran && vendor_exists, "false", "true")
+
 # when DEBUG env var is present we use `--debug` build
 .profile <- ifelse(is_debug, "", "--release")
 .clean_targets <- ifelse(is_debug, "", "$(TARGET_DIR)")
@@ -102,7 +106,8 @@ new_txt <- gsub("@CRAN_FLAGS@", .cran_flags, mv_txt) |>
   gsub("@CLEAN_TARGET@", .clean_targets, x = _) |>
   gsub("@LIBDIR@", .libdir, x = _) |>
   gsub("@TARGET@", .target, x = _) |>
-  gsub("@PANIC_EXPORTS@", .panic_exports, x = _)
+  gsub("@PANIC_EXPORTS@", .panic_exports, x = _) |>
+  gsub("@GEN_WRAPPERS@", .gen_wrappers, x = _)
 
 message("Writing `", mv_ofp, "`.")
 con <- file(mv_ofp, open = "wb")
