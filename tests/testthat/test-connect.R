@@ -33,3 +33,9 @@ test_that("username and token_fn supply credentials", {
   on.exit(redis_close(c2))
   expect_equal(redis_cmd(c2, "PING"), "PONG")
 })
+
+test_that("redact_url hides a password that contains @", {
+  expect_equal(redact_url("redis://user:p@ss@h:6379/0"), "redis://***@h:6379/0")
+  expect_equal(redact_url("rediss://:secret@h:6380"), "rediss://***@h:6380")
+  expect_equal(redact_url("redis://h:6379"), "redis://h:6379")
+})
