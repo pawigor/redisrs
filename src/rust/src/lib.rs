@@ -1,5 +1,7 @@
 use extendr_api::prelude::*;
 
+mod reply;
+
 /// Return string `"Hello world!"` to R.
 /// @export
 #[extendr]
