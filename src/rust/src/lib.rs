@@ -41,6 +41,27 @@ impl RedisConn {
         }
     }
 
+    fn pipeline(&mut self, cmds: List) -> Robj {
+        let mut built = Vec::with_capacity(cmds.len());
+        for (_, c) in cmds.iter() {
+            let args = match c.as_list() {
+                Some(l) => l,
+                None => return errors::failure_msg("usage", "", "internal: command is not a list"),
+            };
+            match build_cmd(&args) {
+                Ok(cmd) => built.push(cmd),
+                Err(m) => return errors::failure_msg("usage", "", &m),
+            }
+        }
+        match self.conn.query_pipeline(built) {
+            Ok(values) => List::from_values(
+                values.into_iter().map(|v| robj::to_robj(reply::from_value(v, false))),
+            )
+            .into(),
+            Err(e) => errors::failure(&e),
+        }
+    }
+
     fn close(&mut self) {
         self.conn = conn::Conn::Closed;
     }

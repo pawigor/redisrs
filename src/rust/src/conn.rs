@@ -54,4 +54,25 @@ impl Conn {
             Conn::Closed => Err(closed_error()),
         }
     }
+
+    pub fn query_pipeline(&mut self, cmds: Vec<Cmd>) -> RedisResult<Vec<Value>> {
+        match self {
+            Conn::Plain(c) => {
+                let mut p = redis::pipe();
+                p.ignore_errors();
+                for cmd in cmds {
+                    p.add_command(cmd);
+                }
+                p.query(c)
+            }
+            Conn::Cluster(c) => {
+                let mut p = redis::cluster::cluster_pipe();
+                for cmd in cmds {
+                    p.add_command(cmd);
+                }
+                p.query(c)
+            }
+            Conn::Closed => Err(closed_error()),
+        }
+    }
 }

@@ -11,6 +11,8 @@ RedisConn <- new.env(parent = emptyenv())
 
 RedisConn$cmd <- function(args, raw) .Call(wrap__RedisConn__cmd, self, args, raw)
 
+RedisConn$pipeline <- function(cmds) .Call(wrap__RedisConn__pipeline, self, cmds)
+
 RedisConn$close <- function() .Call(wrap__RedisConn__close, self)
 
 #' @export
