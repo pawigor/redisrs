@@ -56,7 +56,11 @@ redis_close <- function(con) {
 }
 
 # Greedy up to the last @ before the path: a password can contain @.
-redact_url <- function(url) sub("//[^/?#]*@", "//***@", url)
+# Unix socket URLs carry the password as the query parameter `pass`.
+redact_url <- function(url) {
+  url <- sub("//[^/?#]*@", "//***@", url)
+  gsub("([?&]pass=)[^&#]*", "\\1***", url)
+}
 
 #' @export
 print.redisrs_connection <- function(x, ...) {

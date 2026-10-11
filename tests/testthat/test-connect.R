@@ -39,3 +39,11 @@ test_that("redact_url hides a password that contains @", {
   expect_equal(redact_url("rediss://:secret@h:6380"), "rediss://***@h:6380")
   expect_equal(redact_url("redis://h:6379"), "redis://h:6379")
 })
+
+test_that("redact_url hides a password in a Unix socket URL", {
+  expect_equal(
+    redact_url("redis+unix:///tmp/r.sock?db=1&user=u&pass=s3cret"),
+    "redis+unix:///tmp/r.sock?db=1&user=u&pass=***"
+  )
+  expect_equal(redact_url("unix:///tmp/r.sock?pass=a&db=2"), "unix:///tmp/r.sock?pass=***&db=2")
+})
