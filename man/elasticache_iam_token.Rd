@@ -31,3 +31,11 @@ A token string, valid for 15 minutes.
 \description{
 Make an ElastiCache IAM token
 }
+\examples{
+creds <- list(
+  access_key_id = "AKIDEXAMPLE",
+  secret_access_key = "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY",
+  session_token = ""
+)
+elasticache_iam_token("my-cache", "my-user", "us-east-1", credentials = creds)
+}

@@ -8,6 +8,13 @@
 #' @param key The key.
 #' @param value Any R object.
 #' @param ex Expiry in seconds, or `NULL` for no expiry.
+#' @return `redis_set_object()` returns `NULL`, invisibly. `redis_get_object()`
+#'   returns the stored R object, or `NULL` if the key does not exist.
+#' @examplesIf identical(Sys.getenv("REDISRS_EXAMPLES"), "true")
+#' con <- redis_connect("redis://localhost:6379")
+#' redis_set_object(con, "cars", head(mtcars), ex = 60)
+#' redis_get_object(con, "cars")
+#' redis_close(con)
 #' @export
 redis_set_object <- function(con, key, value, ex = NULL) {
   bytes <- serialize(value, NULL, xdr = TRUE)

@@ -24,3 +24,10 @@ An object of class \code{redisrs_connection}.
 \description{
 Connect to Redis or Valkey
 }
+\examples{
+\dontshow{if (identical(Sys.getenv("REDISRS_EXAMPLES"), "true")) withAutoprint(\{ # examplesIf}
+con <- redis_connect("redis://localhost:6379")
+redis_cmd(con, "PING")
+redis_close(con)
+\dontshow{\}) # examplesIf}
+}

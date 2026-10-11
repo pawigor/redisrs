@@ -6,6 +6,14 @@
 #' @return A list with one reply per command. A command that failed gives a
 #'   `redis_error` condition object in its slot. It is returned, not thrown.
 #'   In cluster mode, one failed command can fail the whole pipeline.
+#' @details After a connection error, the whole pipeline is sent once more on
+#'   a new connection. If the first attempt reached the server, commands such
+#'   as `INCR` run twice.
+#' @examplesIf identical(Sys.getenv("REDISRS_EXAMPLES"), "true")
+#' con <- redis_connect("redis://localhost:6379")
+#' redis_pipeline(con, list(c("SET", "n", "1"), c("INCR", "n"), c("GET", "n")))
+#' redis_cmd(con, "DEL", "n")
+#' redis_close(con)
 #' @export
 redis_pipeline <- function(con, cmds) {
   call <- sys.call()

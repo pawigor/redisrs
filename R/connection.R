@@ -8,6 +8,10 @@
 #'   It is called at each connect and reconnect, for example to get a fresh
 #'   IAM token.
 #' @return An object of class `redisrs_connection`.
+#' @examplesIf identical(Sys.getenv("REDISRS_EXAMPLES"), "true")
+#' con <- redis_connect("redis://localhost:6379")
+#' redis_cmd(con, "PING")
+#' redis_close(con)
 #' @export
 redis_connect <- function(url, cluster = FALSE, username = NULL, token_fn = NULL) {
   call <- sys.call()
@@ -46,6 +50,11 @@ check_con <- function(con, call = NULL) {
 
 #' Close a connection
 #' @param con A connection from [redis_connect()].
+#' @return `NULL`, invisibly. After the call, `con` is closed, and each
+#'   function that uses it gives a `redis_usage_error`.
+#' @examplesIf identical(Sys.getenv("REDISRS_EXAMPLES"), "true")
+#' con <- redis_connect("redis://localhost:6379")
+#' redis_close(con)
 #' @export
 redis_close <- function(con) {
   if (inherits(con, "redisrs_connection") && !is.null(con$ptr)) {

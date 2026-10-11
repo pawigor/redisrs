@@ -1,19 +1,22 @@
 Package: redisrs
 Title: Redis and Valkey Client with TLS, Cluster and AWS IAM Support
-Version: 0.0.0.9000
-Authors@R: 
-    person("Igor", "Pavlichenko", , "pawigor@gmail.com", role = c("aut", "cre"))
-Description: A client for Redis and Valkey built on the Rust crate redis-rs.
-    Supports TLS, cluster mode, pipelines and AWS ElastiCache IAM
-    authentication.
+Version: 0.1.0
+Authors@R: c(
+    person("Igor", "Pavlichenko", , "pawigor@gmail.com", role = c("aut", "cre")),
+    person("Authors of the dependency Rust crates", role = "cph",
+           comment = "see LICENSE.note")
+  )
+Description: A client for 'Redis' and 'Valkey' built on the 'Rust' crate
+    'redis-rs'. Supports TLS, cluster mode, pipelines and 'AWS
+    ElastiCache' IAM authentication.
 License: MIT + file LICENSE
-Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
 Suggests: 
     paws.common,
     testthat (>= 3.0.0),
     withr
-Config/testthat/edition: 3
 Config/rextendr/version: 0.5.0
-SystemRequirements: Cargo (Rust's package manager), rustc >= 1.88.0, xz
 Config/roxygen2/version: 8.1.1
+Config/testthat/edition: 3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+SystemRequirements: Cargo (Rust's package manager), rustc >= 1.88.0, xz
