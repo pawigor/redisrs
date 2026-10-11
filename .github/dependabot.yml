@@ -1,0 +1,10 @@
+# Dependabot opens pull requests for new versions of the GitHub Actions only.
+# Rust crates are not here on purpose: an update to Cargo.lock also needs a new
+# src/rust/vendor.tar.xz (Rscript tools/vendor-crates.R). The security alerts
+# for Cargo.lock come from the repository settings and from cargo-deny.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

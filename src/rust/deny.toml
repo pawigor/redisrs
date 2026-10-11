@@ -1,0 +1,49 @@
+# cargo-deny configuration. CI runs it in .github/workflows/cargo-deny.yaml.
+# Run it locally with: cargo deny --manifest-path src/rust/Cargo.toml check
+
+[graph]
+# Only the targets that CRAN and the CI jobs build.
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "x86_64-apple-darwin",
+    "aarch64-apple-darwin",
+    "x86_64-pc-windows-gnu",
+]
+
+[advisories]
+# RustSec advisories: vulnerabilities fail the check, and so do yanked crates.
+yanked = "deny"
+ignore = [
+    # paste is unmaintained, not vulnerable. extendr-api depends on it, and
+    # there is no other version. Remove this line when extendr drops paste.
+    { id = "RUSTSEC-2024-0436", reason = "unmaintained only, comes from extendr-api" },
+]
+
+[licenses]
+# Every vendored crate is listed in LICENSE.note for CRAN. Keep this list to
+# licenses that are compatible with the package's MIT license.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "ISC",
+    "BSL-1.0",
+    "Unicode-3.0",
+    "Zlib",
+    "Unlicense",
+]
+confidence-threshold = 0.9
+
+[licenses.private]
+# The redisrs crate itself is not published.
+ignore = true
+
+[bans]
+# ring and socket2 need different windows-sys versions. That is not a problem.
+multiple-versions = "warn"
+wildcards = "deny"
+
+[sources]
+# The vendored archive must come from crates.io only.
+unknown-registry = "deny"
+unknown-git = "deny"

@@ -11,3 +11,4 @@
 ^inst/manual$
 ^\.superpowers$
 ^tools/vendor-crates\.R$
+^src/rust/deny\.toml$
