@@ -7,6 +7,8 @@ NULL
 
 rs_connect <- function(url, cluster, username, password) .Call(wrap__rs_connect, url, cluster, username, password)
 
+rs_iam_token <- function(cache_name, user_id, region, access_key, secret_key, session_token, amz_date, serverless) .Call(wrap__rs_iam_token, cache_name, user_id, region, access_key, secret_key, session_token, amz_date, serverless)
+
 RedisConn <- new.env(parent = emptyenv())
 
 RedisConn$cmd <- function(args, raw) .Call(wrap__RedisConn__cmd, self, args, raw)

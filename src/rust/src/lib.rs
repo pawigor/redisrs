@@ -79,8 +79,34 @@ fn rs_connect(url: &str, cluster: bool, username: Robj, password: Robj) -> Robj 
     }
 }
 
+#[extendr]
+#[allow(clippy::too_many_arguments)]
+fn rs_iam_token(
+    cache_name: &str,
+    user_id: &str,
+    region: &str,
+    access_key: &str,
+    secret_key: &str,
+    session_token: Robj,
+    amz_date: &str,
+    serverless: bool,
+) -> String {
+    let token = opt_string(&session_token).filter(|t| !t.is_empty());
+    iam::presign(&iam::TokenRequest {
+        cache_name,
+        user_id,
+        region,
+        access_key,
+        secret_key,
+        session_token: token.as_deref(),
+        amz_date,
+        serverless,
+    })
+}
+
 extendr_module! {
     mod redisrs;
     impl RedisConn;
     fn rs_connect;
+    fn rs_iam_token;
 }
