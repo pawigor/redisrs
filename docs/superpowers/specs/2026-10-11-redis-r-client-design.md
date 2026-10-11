@@ -69,7 +69,9 @@ The Rust core has these jobs:
 - It converts Rust errors into R conditions.
 - It signs IAM tokens with `aws-sigv4`.
 
-The connection object goes to R as an external pointer. When the garbage collector removes the pointer, R frees the connection. A call to `redis_close()` also frees it.
+The Rust core keeps the connection kind in an enum. Version 1 has two kinds: plain and cluster. Later versions add kinds without a change to the R API.
+
+The connection goes to R as an external pointer inside an R object of class `redisrs_connection`. The user never gets a bare pointer. When the garbage collector removes the object, R frees the connection. A call to `redis_close()` also frees it.
 
 ### Layer 2: R base functions
 
@@ -78,7 +80,7 @@ These functions are thin R wrappers around the Rust core.
 | Function | Purpose |
 |---|---|
 | `redis_connect(url, ..., cluster = FALSE, token_fn = NULL)` | Open a connection. |
-| `redis_cmd(con, ...)` | Run one command, for example `redis_cmd(con, "SET", "k", "v")`. |
+| `redis_cmd(con, ...)` | Run one command, for example `redis_cmd(con, "SET", "k", "v")`. Commands that change the connection mode are refused. |
 | `redis_pipeline(con, cmds)` | Run a list of commands in one round trip. Return a list of replies. |
 | `redis_close(con)` | Close the connection. |
 
@@ -112,6 +114,8 @@ The R callback is safe because the synchronous `redis-rs` API runs on the main R
 
 ## Reply conversion
 
+The client always uses RESP3. The user cannot select RESP2. Thus the shape of each reply stays the same in all versions.
+
 | Redis reply | R value |
 |---|---|
 | Simple string, bulk string (valid UTF-8) | `character` of length 1 |
@@ -135,8 +139,40 @@ Each error is an R condition with a class. The user can catch each class with `t
 | `redis_error` | The server replies with an error, for example a wrong key type. | The connection stays open. No retry. |
 | `redis_connection_error` | Network failure or TLS failure. | The client reconnects once, with a new token from `token_fn`. If the second attempt fails, the error goes to the user. |
 | `redis_auth_error` | The server rejects the password or the token. | No retry. |
+| `redis_usage_error` | The user calls `redis_cmd()` with a command that changes the connection mode. | Nothing goes to the server. |
 
-All three classes also have the class `redisrs_error`. A Rust panic does not stop the R session. extendr catches the panic and turns it into an R error.
+All four classes also have the class `redisrs_error`. A Rust panic does not stop the R session. extendr catches the panic and turns it into an R error.
+
+## Extension points
+
+Later versions add features without a change to the version 1 contract. Three rules in version 1 make this possible.
+
+### Rule 1: `redis_cmd()` refuses mode commands
+
+`redis_cmd()` and `redis_pipeline()` refuse these commands with a `redis_usage_error`:
+
+- `SUBSCRIBE`, `PSUBSCRIBE`, `SSUBSCRIBE`
+- `MONITOR`
+
+After one of these commands, a connection stops replying to normal commands. If version 1 accepted them, a later refusal would break user code.
+
+### Rule 2: RESP3 is fixed
+
+Version 1 always uses RESP3. RESP2 and RESP3 give different shapes for the same reply. For example, `HGETALL` gives a flat list in RESP2 and a map in RESP3. A later switch would break user code.
+
+### Rule 3: the connection has an R class
+
+Each connection is an R object of class `redisrs_connection`. New connection types get new classes. Shared functions use S3 dispatch (selection of a function by the class of the object).
+
+### Map of later features
+
+| Feature | How it comes | Contract change |
+|---|---|---|
+| Streams | Commands already work through `redis_cmd()`. Later helpers, for example `redis_stream_read()`, convert replies into a `data.frame`. | No |
+| Pub/Sub | `redis_subscribe(con, channels)` returns an object of class `redisrs_subscriber`. `redis_poll(sub, timeout)` reads messages. | No |
+| Sentinel | A new connect function or a new URL scheme. | No |
+| Asynchronous mode | `redis_connect_async()` returns a new class. Commands return promises. The synchronous API stays the same. | No |
+| `redux`-compatible API | A separate set of functions on top of `redis_cmd()`. | No |
 
 ## Testing
 
@@ -181,4 +217,5 @@ GitHub Actions runs on each push:
 
 - The vendored archive can be too large for CRAN. We make sure that we know its size in the first implementation step, before we write the API.
 - `redis-rs` changes its API between major versions. We pin one major version in `Cargo.toml`.
+- The synchronous Pub/Sub API of `redis-rs` can lack support for sharded channels in cluster mode. We find this out in the first implementation step. The result does not change version 1, but it changes the Pub/Sub design.
 - Windows builds of Rust packages for R need the correct target toolchain. The CI job on Windows finds problems early.
