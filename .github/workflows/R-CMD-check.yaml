@@ -1,0 +1,46 @@
+name: R-CMD-check
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ runner.os == 'Windows' && 'x86_64-pc-windows-gnu' || '' }}
+      - uses: r-lib/actions/setup-pandoc@v2
+      - uses: r-lib/actions/setup-r@v2
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+      # R CMD check --as-cran checks configure with checkbashisms (Debian devscripts).
+      - name: Install checkbashisms
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y --no-install-recommends devscripts
+      - name: Skip the bashisms check where checkbashisms is not available
+        if: runner.os != 'Linux'
+        shell: bash
+        run: echo "_R_CHECK_BASHISMS_=false" >> "$GITHUB_ENV"
+      - name: Start test servers
+        if: runner.os == 'Linux'
+        run: |
+          tests/servers/gen-certs.sh
+          docker compose -f tests/servers/docker-compose.yml up -d
+          timeout 60 sh -c 'until docker compose -f tests/servers/docker-compose.yml exec -T cluster valkey-cli -p 7000 cluster info | grep -q cluster_state:ok; do sleep 1; done'
+          echo "REDISRS_TEST_SERVERS=true" >> "$GITHUB_ENV"
+      - uses: r-lib/actions/check-r-package@v2
+      - name: Rust unit tests
+        if: runner.os == 'Linux'
+        # The test binary loads libR.so at run time, and the runner's R is not
+        # registered with ldconfig.
+        run: |
+          cd src/rust
+          export R_HOME=$(R RHOME)
+          LD_LIBRARY_PATH="$R_HOME/lib" cargo test

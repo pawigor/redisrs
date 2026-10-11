@@ -1,0 +1,21 @@
+services:
+  plain:
+    image: valkey/valkey:8.1
+    ports: ["6379:6379"]
+  auth:
+    image: valkey/valkey:8.1
+    command: valkey-server --port 6381 --requirepass secret
+    ports: ["6381:6381"]
+  tls:
+    image: valkey/valkey:8.1
+    command: >
+      valkey-server --port 0 --tls-port 6380
+      --tls-cert-file /certs/server.crt --tls-key-file /certs/server.key
+      --tls-ca-cert-file /certs/ca.crt --tls-auth-clients no
+    volumes: ["./certs:/certs:ro"]
+    ports: ["6380:6380"]
+  cluster:
+    image: valkey/valkey:8.1
+    network_mode: host
+    volumes: ["./start-cluster.sh:/start-cluster.sh:ro"]
+    entrypoint: ["sh", "/start-cluster.sh"]

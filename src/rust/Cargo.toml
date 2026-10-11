@@ -1,0 +1,28 @@
+[package]
+name = 'redisrs'
+publish = false
+version = '0.1.0'
+edition = '2021'
+rust-version = '1.88'
+
+[lib]
+crate-type = [ 'rlib', 'staticlib' ]
+name = 'redisrs'
+
+[[bin]]
+name = 'document'
+path = 'document.rs'
+
+[dependencies]
+extendr-api = "0.9"
+redis = { version = "=1.7.1", default-features = false, features = ["cluster", "tls-rustls", "tls-rustls-insecure"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"
+# Stub Unicode back end for idna: host names must be ASCII. Removes the ICU4X crates (about 0.6 MB vendored).
+idna_adapter = "=1.0.0"
+
+[profile.release]
+lto = true
+codegen-units = 1

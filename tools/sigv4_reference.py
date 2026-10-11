@@ -1,32 +1,32 @@
-# Independent SigV4 query presign for an ElastiCache IAM token (reference only).
-import hashlib, hmac
-from urllib.parse import quote
+# Prints the ElastiCache IAM token test vectors that src/rust/src/iam.rs and
+# tests/testthat/test-elasticache.R check against. botocore signs the tokens
+# with a frozen clock, so the output is fixed. Not part of the R package.
+#
+#   python3 -m venv /tmp/boto && /tmp/boto/bin/pip install botocore
+#   /tmp/boto/bin/python -I tools/sigv4_reference.py
+#
+# Checked with botocore 1.43.111.
+import datetime
+import botocore.auth as auth
+from botocore.awsrequest import AWSRequest
+from botocore.credentials import Credentials
 
-def enc(s): return quote(s, safe="-_.~")
-def h(key, msg): return hmac.new(key, msg.encode(), hashlib.sha256).digest()
+AK = "AKIDEXAMPLE"
+SK = "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY"
 
-def presign(cache, user, region, ak, sk, amz_date, expires=900, serverless=False):
-    date = amz_date[:8]
-    scope = f"{date}/{region}/elasticache/aws4_request"
+
+def token(cache, user, region, when, serverless=False, session=None):
+    auth.get_current_datetime = lambda: when
     params = {"Action": "connect", "User": user}
     if serverless:
         params["ResourceType"] = "ServerlessCache"
-    params.update({
-        "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
-        "X-Amz-Credential": f"{ak}/{scope}",
-        "X-Amz-Date": amz_date,
-        "X-Amz-Expires": str(expires),
-        "X-Amz-SignedHeaders": "host",
-    })
-    cq = "&".join(f"{enc(k)}={enc(v)}" for k, v in sorted(params.items()))
-    creq = "\n".join(["GET", "/", cq, f"host:{cache}\n", "host",
-                      hashlib.sha256(b"").hexdigest()])
-    sts = "\n".join(["AWS4-HMAC-SHA256", amz_date, scope,
-                     hashlib.sha256(creq.encode()).hexdigest()])
-    k = h(h(h(h(("AWS4" + sk).encode(), date), region), "elasticache"), "aws4_request")
-    return hmac.new(k, sts.encode(), hashlib.sha256).hexdigest()
+    req = AWSRequest(method="GET", url=f"http://{cache}/", params=params)
+    auth.SigV4QueryAuth(Credentials(AK, SK, session), "elasticache", region, expires=900).add_auth(req)
+    return req.prepare().url.removeprefix("http://")
 
-print(presign("my-cache", "my-user", "us-east-1", "AKIDEXAMPLE",
-              "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY", "20260101T000000Z"))
-print(presign("my-cache", "my-user", "us-east-1", "AKIDEXAMPLE",
-              "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY", "20260101T000000Z", serverless=True))
+
+d1 = datetime.datetime(2026, 1, 1, 0, 0, 0)
+d2 = datetime.datetime(2026, 3, 15, 12, 30, 45)
+print(token("my-cache", "my-user", "us-east-1", d1))
+print(token("my-cache", "my-user", "us-east-1", d1, serverless=True))
+print(token("my-repl-group", "app-user", "eu-west-1", d2, session="FQoGZXIvYXdzEXAMPLE/token+abc="))

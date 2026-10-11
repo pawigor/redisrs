@@ -1,0 +1,12 @@
+src/rust/vendor
+src/Makevars
+src/Makevars.win
+src/rust/target/
+src/rust/vendor/
+*.o
+*.so
+*.dll
+redisrs_*.tar.gz
+redisrs.Rcheck/
+tests/servers/certs/
+.superpowers/

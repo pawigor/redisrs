@@ -1,0 +1,20 @@
+name: offline-build
+on: [push, pull_request]
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: r-lib/actions/setup-r@v2
+      - name: Build the source tarball
+        run: R CMD build --no-build-vignettes .
+      - name: Size gate
+        run: |
+          size=$(stat -c %s redisrs_*.tar.gz)
+          echo "tarball bytes: $size"
+          test "$size" -lt 5000000
+      - name: Install without network
+        run: |
+          rm -rf ~/.cargo/registry ~/.cargo/git
+          sudo unshare -n env PATH="$PATH" HOME="$HOME" NOT_CRAN=false R CMD INSTALL redisrs_*.tar.gz
