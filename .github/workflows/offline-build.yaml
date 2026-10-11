@@ -1,12 +1,17 @@
 name: offline-build
 on: [push, pull_request]
+permissions:
+  contents: read
+
 jobs:
   offline:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: r-lib/actions/setup-r@v2
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
+        with:
+          toolchain: stable
+      - uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2
       - name: Build the source tarball
         run: R CMD build --no-build-vignettes .
       - name: Size gate
