@@ -25,8 +25,18 @@ redis_cmd_raw <- function(con, ...) {
   run_command(con, function(ptr) ptr$cmd(args, TRUE), call)
 }
 
+should_retry <- function(con, res) {
+  identical(res$kind, "connection") ||
+    (identical(res$kind, "auth") && !is.null(con$token_fn))
+}
+
 run_command <- function(con, f, call) {
   res <- f(con$ptr)
+  if (is_failure(res) && should_retry(con, res)) {
+    again <- connect_ptr(con)
+    if (is_failure(again)) raise_failure(again, call)
+    res <- f(con$ptr)
+  }
   if (is_failure(res)) raise_failure(res, call)
   res
 }
