@@ -22,4 +22,4 @@ jobs:
       - name: Install without network
         run: |
           rm -rf ~/.cargo/registry ~/.cargo/git
-          sudo unshare -n env PATH="$PATH" HOME="$HOME" NOT_CRAN=false R CMD INSTALL redisrs_*.tar.gz
+          sudo unshare -n env -u NOT_CRAN PATH="$PATH" HOME="$HOME" R CMD INSTALL redisrs_*.tar.gz

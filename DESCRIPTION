@@ -1,5 +1,5 @@
 Package: redisrs
-Title: Redis and Valkey Client with TLS, Cluster and AWS IAM Support
+Title: 'Redis' and 'Valkey' Client with TLS, Cluster and 'AWS' IAM Support
 Version: 0.1.0
 Authors@R: c(
     person("Igor", "Pavlichenko", , "pawigor@gmail.com", role = c("aut", "cre")),
@@ -7,8 +7,8 @@ Authors@R: c(
            comment = "see LICENSE.note")
   )
 Description: A client for 'Redis' and 'Valkey' built on the 'Rust' crate
-    'redis-rs'. Supports TLS, cluster mode, pipelines and 'AWS
-    ElastiCache' IAM authentication.
+    'redis-rs'. Supports TLS, cluster mode, pipelines and
+    'AWS ElastiCache' IAM authentication.
 License: MIT + file LICENSE
 Suggests: 
     paws.common,

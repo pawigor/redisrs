@@ -36,10 +36,13 @@ $(STATLIB):
 	export LIBRARY_PATH="$(LIBRARY_PATH);$(CURDIR)/$(TARGET_DIR)/libgcc_mock" && \
 	RUSTFLAGS="$(RUSTFLAGS) --print=native-static-libs" cargo build @CRAN_FLAGS@ --target=$(TARGET) --lib @PROFILE@ --manifest-path=rust/Cargo.toml --target-dir=$(TARGET_DIR)
 
-	# Generate wrappers
+	# The wrappers in R/extendr-wrappers.R are committed. A CRAN build skips
+	# this step: it compiles everything a second time and writes into R/.
+	if [ "@GEN_WRAPPERS@" = "true" ]; then \
 	export CARGO_HOME=$(CARGOTMP) && \
 	export PATH="$(PATH):$(HOME)/.cargo/bin" && \
-	cargo run @CRAN_FLAGS@ --bin document --target $(TARGET) --manifest-path=./rust/Cargo.toml --target-dir $(TARGET_DIR)
+	cargo run @CRAN_FLAGS@ --bin document --target $(TARGET) --manifest-path=./rust/Cargo.toml --target-dir $(TARGET_DIR); \
+	fi
 
 	# Always clean up CARGOTMP
 	rm -Rf $(CARGOTMP);
