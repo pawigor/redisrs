@@ -7,7 +7,7 @@ redisrs is a Redis and Valkey client for R. It uses the Rust crate `redis-rs`. I
 You need Rust 1.88 or newer (`rustc` and `cargo`). Install it from https://rustup.rs.
 
 ```r
-remotes::install_github("<owner>/redisrs")
+remotes::install_github("pawigor/redisrs")
 ```
 
 ## Usage
