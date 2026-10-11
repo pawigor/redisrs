@@ -5,8 +5,18 @@
 #' @useDynLib redisrs, .registration = TRUE
 NULL
 
-#' Return string `"Hello world!"` to R.
+rs_connect <- function(url, cluster, username, password) .Call(wrap__rs_connect, url, cluster, username, password)
+
+RedisConn <- new.env(parent = emptyenv())
+
+RedisConn$cmd <- function(args, raw) .Call(wrap__RedisConn__cmd, self, args, raw)
+
+RedisConn$close <- function() .Call(wrap__RedisConn__close, self)
+
 #' @export
-hello_world <- function() .Call(wrap__hello_world)
+`$.RedisConn` <- function (self, name) { func <- RedisConn[[name]]; environment(func) <- environment(); func }
+
+#' @export
+`[[.RedisConn` <- `$.RedisConn`
 
 # nolint end
