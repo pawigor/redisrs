@@ -27,7 +27,7 @@ These decisions come from the brainstorming session.
 
 - The core is `redis-rs`, called from R through extendr. We do not use `hiredis` or a new protocol implementation.
 - The API is our own and is not compatible with `redux`. Users get full freedom through one generic command function. Convenience functions sit on top for AWS use.
-- AWS credentials come from the R package `paws.common`. The token signature is made in Rust with the crate `aws-sigv4`. We do not use the full AWS SDK for Rust.
+- AWS credentials come from the R package `paws.common`. The token signature is made in Rust with the small crates `hmac` and `sha2`. We do not use `aws-sigv4` or the AWS SDK for Rust, because they add many vendored crates. A test vector from botocore makes sure that the signature is correct.
 - TLS uses `rustls`, not `native-tls`. This removes the dependency on the system OpenSSL.
 
 ## Scope
@@ -67,7 +67,7 @@ The Rust core has these jobs:
 - It runs one command or a pipeline.
 - It converts Redis replies into R values.
 - It converts Rust errors into R conditions.
-- It signs IAM tokens with `aws-sigv4`.
+- It signs IAM tokens with SigV4 (`hmac` and `sha2`).
 
 The Rust core keeps the connection kind in an enum. Version 1 has two kinds: plain and cluster. Later versions add kinds without a change to the R API.
 
@@ -79,19 +79,21 @@ These functions are thin R wrappers around the Rust core.
 
 | Function | Purpose |
 |---|---|
-| `redis_connect(url, ..., cluster = FALSE, token_fn = NULL)` | Open a connection. |
+| `redis_connect(url, cluster = FALSE, username = NULL, token_fn = NULL)` | Open a connection. |
 | `redis_cmd(con, ...)` | Run one command, for example `redis_cmd(con, "SET", "k", "v")`. Commands that change the connection mode are refused. |
 | `redis_pipeline(con, cmds)` | Run a list of commands in one round trip. Return a list of replies. |
 | `redis_close(con)` | Close the connection. |
 
-`token_fn` is an R function without arguments. It returns a password string. The Rust core calls it at each connect and reconnect. If `token_fn` is `NULL`, the client uses the password from the URL.
+`token_fn` is an R function without arguments. It returns a password string. The R layer calls it at each connect and reconnect, and passes the result to the Rust core. If `token_fn` is `NULL`, the client uses the password from the URL.
 
 ### Layer 3: R convenience functions
 
 | Function | Purpose |
 |---|---|
-| `redis_connect_elasticache(host, port, user, region, cluster, iam = TRUE)` | Build the URL, turn on TLS, and set `token_fn` to an IAM token generator. |
-| `elasticache_iam_token(host, user, region, credentials = NULL)` | Return a fresh IAM token. If `credentials` is `NULL`, credentials come from `paws.common::locate_credentials()`. |
+| `redis_connect_elasticache(endpoint, cache_name, user_id, region, port = 6379, cluster = FALSE, serverless = FALSE)` | Build a `rediss://` URL for `endpoint`, and set `token_fn` to an IAM token generator for `cache_name`. |
+| `elasticache_iam_token(cache_name, user_id, region, serverless = FALSE, credentials = NULL)` | Return a fresh IAM token. If `credentials` is `NULL`, credentials come from `paws.common::locate_credentials()`. |
+
+`endpoint` is the DNS name that the client connects to. `cache_name` is the replication group ID or the serverless cache name. The token signs `cache_name`, not `endpoint`. `user_id` is the ElastiCache user ID. AUTH uses the same `user_id` as the username.
 | `redis_set_object(con, key, value, ex = NULL)` | Serialize an R object and store it. `ex` is the expiry in seconds. |
 | `redis_get_object(con, key)` | Read and unserialize an R object. If the key does not exist, return `NULL`. |
 
@@ -99,18 +101,18 @@ These functions are thin R wrappers around the Rust core.
 
 ## IAM authentication
 
-An IAM token is a presigned SigV4 request to the ElastiCache service. The token is valid for 15 minutes. AWS closes a connection that uses an IAM token after 12 hours.
+An IAM token is a presigned SigV4 request to the ElastiCache service. The request is `GET http://<cache_name>/?Action=connect&User=<user_id>`. For a serverless cache, the query also has `&ResourceType=ServerlessCache`. The token is this URL without `http://`. The payload hash is the SHA-256 of an empty body, as in botocore. The token is valid for 15 minutes. AWS closes a connection that uses an IAM token after 12 hours.
 
 The flow is:
 
 1. R calls `paws.common::locate_credentials()`. This reads environment variables, `~/.aws` profiles, EC2 and ECS roles, and SSO.
-2. R passes the access key, secret key, session token, region, host, and user to the Rust core.
-3. The Rust core builds the presigned request with `aws-sigv4` and returns the token string.
-4. The Rust core uses the token as the password for AUTH.
+2. R passes the access key, secret key, session token, region, cache name, and user ID to the Rust core.
+3. The Rust core builds the presigned request and returns the token string.
+4. The R layer passes `user_id` and the token to the Rust core as the username and password for AUTH.
 
-The Rust core calls `token_fn` at each connect and reconnect. Thus a reconnect after 12 hours gets a new token.
+The R layer calls `token_fn` at each connect and reconnect. Thus a reconnect after 12 hours gets a new token. Rust never calls back into R. This keeps the Rust core free of R callbacks, which are safe only on the main R thread.
 
-The R callback is safe because the synchronous `redis-rs` API runs on the main R thread. An asynchronous mode will need a different design. That is one reason why version 1 excludes it.
+In cluster mode, `redis-rs` reconnects to single nodes internally with the password that it got at the start. After 15 minutes that token is no longer valid, so an internal reconnect can fail with an auth error. For this reason, if `token_fn` is set, the R layer also rebuilds the connection once after an auth error.
 
 ## Reply conversion
 
@@ -138,10 +140,12 @@ Each error is an R condition with a class. The user can catch each class with `t
 |---|---|---|
 | `redis_error` | The server replies with an error, for example a wrong key type. | The connection stays open. No retry. |
 | `redis_connection_error` | Network failure or TLS failure. | The client reconnects once, with a new token from `token_fn`. If the second attempt fails, the error goes to the user. |
-| `redis_auth_error` | The server rejects the password or the token. | No retry. |
-| `redis_usage_error` | The user calls `redis_cmd()` with a command that changes the connection mode. | Nothing goes to the server. |
+| `redis_auth_error` | The server rejects the password or the token. | If `token_fn` is set, the client reconnects once with a new token. Else, no retry. |
+| `redis_usage_error` | The user passes a command that changes the connection mode, an invalid URL, an invalid argument, or a closed connection. | Nothing goes to the server. No retry. |
 
-All four classes also have the class `redisrs_error`. A Rust panic does not stop the R session. extendr catches the panic and turns it into an R error.
+All four classes also have the class `redisrs_error`.
+
+A retry after a connection error sends the command again. If the first attempt reached the server before the failure, a command such as `INCR` runs twice. The documentation of `redis_cmd()` states this. A Rust panic does not stop the R session. extendr catches the panic and turns it into an R error.
 
 ## Extension points
 
@@ -217,5 +221,6 @@ GitHub Actions runs on each push:
 
 - The vendored archive can be too large for CRAN. We make sure that we know its size in the first implementation step, before we write the API.
 - `redis-rs` changes its API between major versions. We pin one major version in `Cargo.toml`.
+- `rustls` can select the `aws-lc-rs` crypto provider. That provider needs cmake and NASM, which CRAN and Windows machines do not always have. We make sure that the build uses `ring`.
 - The synchronous Pub/Sub API of `redis-rs` can lack support for sharded channels in cluster mode. We find this out in the first implementation step. The result does not change version 1, but it changes the Pub/Sub design.
 - Windows builds of Rust packages for R need the correct target toolchain. The CI job on Windows finds problems early.
