@@ -10,6 +10,7 @@ Description: A client for 'Redis' and 'Valkey' built on the 'Rust' crate
     'redis-rs'. Supports TLS, cluster mode, pipelines and
     'AWS ElastiCache' IAM authentication.
 License: MIT + file LICENSE
+Depends: R (>= 4.2)
 Suggests: 
     paws.common,
     testthat (>= 3.0.0),

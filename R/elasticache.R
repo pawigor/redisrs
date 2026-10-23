@@ -41,7 +41,7 @@ elasticache_iam_token <- function(cache_name, user_id, region, serverless = FALS
   iam_token_at(cache_name, user_id, region, serverless, credentials, amz_date)
 }
 
-#' Connect to AWS ElastiCache or MemoryDB with IAM
+#' Connect to AWS ElastiCache with IAM
 #'
 #' @param endpoint The DNS name of the cache endpoint.
 #' @inheritParams elasticache_iam_token

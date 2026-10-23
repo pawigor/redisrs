@@ -8,7 +8,8 @@
 #'   In cluster mode, one failed command can fail the whole pipeline.
 #' @details After a connection error, the whole pipeline is sent once more on
 #'   a new connection. If the first attempt reached the server, commands such
-#'   as `INCR` run twice.
+#'   as `INCR` run twice. A pipeline that contains `MULTI` or `WATCH`, or that
+#'   is sent while a transaction is open, is not sent a second time.
 #' @examplesIf identical(Sys.getenv("REDISRS_EXAMPLES"), "true")
 #' con <- redis_connect("redis://localhost:6379")
 #' redis_pipeline(con, list(c("SET", "n", "1"), c("INCR", "n"), c("GET", "n")))
@@ -21,5 +22,5 @@ redis_pipeline <- function(con, cmds) {
   if (!is.list(cmds)) stop(usage_error("cmds must be a list of commands", call))
   if (length(cmds) == 0L) return(list())
   packed <- lapply(cmds, function(cmd) as_args(as.list(cmd), call))
-  run_command(con, function(ptr) ptr$pipeline(packed), call)
+  run_command(con, function(ptr) ptr$pipeline(packed), call, packed, pipeline = TRUE)
 }

@@ -25,12 +25,22 @@ fn bytes_reply(b: Vec<u8>, raw: bool) -> Reply {
     }
 }
 
+/// R strings cannot hold NUL, so a simple or verbatim string with NUL is raw.
+fn text_reply(s: String) -> Reply {
+    if s.contains('\0') {
+        Reply::Bytes(s.into_bytes())
+    } else {
+        Reply::Str(s)
+    }
+}
+
+/// R names must be text without NUL. A binary key loses its invalid bytes.
 fn key_string(v: Value) -> String {
     match from_value(v, false) {
         Reply::Str(s) => s,
         Reply::Int(i) => i.to_string(),
         Reply::Double(d) => d.to_string(),
-        Reply::Bytes(b) => String::from_utf8_lossy(&b).into_owned(),
+        Reply::Bytes(b) => String::from_utf8_lossy(&b).replace('\0', "\u{FFFD}"),
         other => format!("{other:?}"),
     }
 }
@@ -42,9 +52,9 @@ pub fn from_value(v: Value, raw: bool) -> Reply {
         Value::Double(d) => Reply::Double(d),
         Value::Boolean(b) => Reply::Bool(b),
         Value::Okay => Reply::Str("OK".into()),
-        Value::SimpleString(s) => Reply::Str(s),
+        Value::SimpleString(s) => text_reply(s),
         Value::BulkString(b) => bytes_reply(b, raw),
-        Value::VerbatimString { text, .. } => Reply::Str(text),
+        Value::VerbatimString { text, .. } => text_reply(text),
         Value::Array(items) | Value::Set(items) => {
             Reply::Array(items.into_iter().map(|x| from_value(x, raw)).collect())
         }
@@ -132,5 +142,21 @@ mod tests {
     fn raw_flag_applies_to_map_values_not_keys() {
         let v = Value::Map(vec![(bulk(b"f"), bulk(b"v"))]);
         assert_eq!(from_value(v, true), Reply::Map(vec![("f".into(), Reply::Bytes(b"v".to_vec()))]));
+    }
+
+    #[test]
+    fn simple_and_verbatim_strings_with_nul_are_bytes() {
+        assert_eq!(from_value(Value::SimpleString("a\0b".into()), false), Reply::Bytes(b"a\0b".to_vec()));
+        let v = Value::VerbatimString { format: redis::VerbatimFormat::Text, text: "a\0b".into() };
+        assert_eq!(from_value(v, false), Reply::Bytes(b"a\0b".to_vec()));
+    }
+
+    #[test]
+    fn binary_map_keys_never_hold_nul() {
+        let v = Value::Map(vec![(bulk(b"a\0b"), Value::Nil), (bulk(&[0xff]), Value::Nil)]);
+        assert_eq!(
+            from_value(v, false),
+            Reply::Map(vec![("a\u{FFFD}b".into(), Reply::Nil), ("\u{FFFD}".into(), Reply::Nil)])
+        );
     }
 }

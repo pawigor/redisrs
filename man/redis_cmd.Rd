@@ -21,10 +21,15 @@ Strings with invalid UTF-8 or NUL bytes are raw vectors.
 Run one Redis command
 }
 \details{
-\code{SUBSCRIBE}, \code{PSUBSCRIBE}, \code{SSUBSCRIBE} and \code{MONITOR} are refused.
+\code{SUBSCRIBE}, \code{PSUBSCRIBE}, \code{SSUBSCRIBE}, \code{MONITOR}, the
+\code{UNSUBSCRIBE} commands, \verb{CLIENT REPLY} and \code{SELECT} are refused. Put the
+database number in the URL instead of \code{SELECT}.
+
 After a connection error the command is sent once more on a new
 connection. If the first attempt reached the server, a command such as
-\code{INCR} runs twice.
+\code{INCR} runs twice. Between \code{MULTI} or \code{WATCH} and \code{EXEC}, \code{DISCARD} or
+\code{UNWATCH}, there is no second attempt, because the new connection does
+not have the transaction.
 }
 \examples{
 \dontshow{if (identical(Sys.getenv("REDISRS_EXAMPLES"), "true")) withAutoprint(\{ # examplesIf}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/elasticache.R
 \name{redis_connect_elasticache}
 \alias{redis_connect_elasticache}
-\title{Connect to AWS ElastiCache or MemoryDB with IAM}
+\title{Connect to AWS ElastiCache with IAM}
 \usage{
 redis_connect_elasticache(
   endpoint,
@@ -35,7 +35,7 @@ A connection from \code{\link[=redis_connect]{redis_connect()}}. A new token is 
 connect and reconnect.
 }
 \description{
-Connect to AWS ElastiCache or MemoryDB with IAM
+Connect to AWS ElastiCache with IAM
 }
 \examples{
 \dontshow{if (interactive() && nzchar(Sys.getenv("REDISRS_EC_ENDPOINT"))) withAutoprint(\{ # examplesIf}

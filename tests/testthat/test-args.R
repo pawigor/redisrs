@@ -34,3 +34,24 @@ test_that("mode commands are refused in any case", {
     expect_error(as_args(list(cmd, "ch")), class = "redis_usage_error")
   }
 })
+
+test_that("commands without a normal reply are refused", {
+  for (cmd in list("UNSUBSCRIBE", "punsubscribe", "SUnsubscribe", c("client", "reply", "off"), c("CLIENT", "REPLY", "SKIP"))) {
+    expect_error(as_args(as.list(cmd)), class = "redis_usage_error")
+  }
+  expect_length(as_args(list("CLIENT", "INFO")), 2)
+})
+
+test_that("SELECT is refused because a reconnect would lose it", {
+  expect_error(as_args(list("select", 1L)), class = "redis_usage_error")
+})
+
+test_that("command names use ASCII case rules in any locale", {
+  skip_on_cran()
+  all <- tryCatch(system("locale -a", intern = TRUE, ignore.stderr = TRUE), error = function(e) character())
+  tr <- grep("^tr_TR\\.utf-?8$", all, ignore.case = TRUE, value = TRUE)
+  skip_if(length(tr) == 0L, "no Turkish locale")
+  withr::local_locale(LC_CTYPE = tr[[1L]])
+  expect_equal(command_name(list(charToRaw("multi"))), "MULTI")
+  expect_error(as_args(list("unsubscribe")), class = "redis_usage_error")
+})
