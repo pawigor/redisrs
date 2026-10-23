@@ -4,7 +4,7 @@
 ^src/rust/target$
 ^src/Makevars$
 ^src/Makevars\.win$
-^docs$
+^dev$
 ^tools/sigv4_reference\.py$
 ^\.github$
 ^tests/servers$
