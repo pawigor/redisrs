@@ -14,12 +14,16 @@
 #' redis_close(con)
 #' @export
 redis_connect <- function(url, cluster = FALSE, username = NULL, token_fn = NULL) {
-  call <- sys.call()
+  # The full call can hold a password in `url` or in an inline `token_fn`.
+  call <- sys.call()[1L]
   if (!is.character(url) || length(url) != 1L || is.na(url)) {
     stop(usage_error("url must be one string", call))
   }
   if (!is.null(token_fn) && !is.function(token_fn)) {
     stop(usage_error("token_fn must be a function or NULL", call))
+  }
+  if (!is.null(username) && !is_string(username)) {
+    stop(usage_error("username must be one string or NULL", call))
   }
   con <- new.env(parent = emptyenv())
   con$url <- url
@@ -27,14 +31,21 @@ redis_connect <- function(url, cluster = FALSE, username = NULL, token_fn = NULL
   con$username <- username
   con$token_fn <- token_fn
   con$ptr <- NULL
+  con$multi <- FALSE
+  con$watch <- FALSE
   class(con) <- "redisrs_connection"
-  res <- connect_ptr(con)
+  res <- connect_ptr(con, call)
   if (is_failure(res)) raise_failure(res, call)
   con
 }
 
-connect_ptr <- function(con) {
+is_string <- function(x) is.character(x) && length(x) == 1L && !is.na(x)
+
+connect_ptr <- function(con, call = NULL) {
   password <- if (is.null(con$token_fn)) NULL else con$token_fn()
+  if (!is.null(con$token_fn) && !is_string(password)) {
+    stop(usage_error("token_fn must return one string", call))
+  }
   res <- rs_connect(con$url, con$cluster, con$username, password)
   if (!is_failure(res)) con$ptr <- res
   res
@@ -65,10 +76,18 @@ redis_close <- function(con) {
 }
 
 # Greedy up to the last @ before the path: a password can contain @.
-# Unix socket URLs carry the password as the query parameter `pass`.
+# Unix socket URLs carry the password as the query parameter `pass`. Its
+# name can be percent-encoded, so each name is decoded before the match.
 redact_url <- function(url) {
   url <- sub("//[^/?#]*@", "//***@", url)
-  gsub("([?&]pass=)[^&#]*", "\\1***", url)
+  m <- gregexpr("[?&][^=&#]*=[^&#]*", url)
+  regmatches(url, m) <- lapply(regmatches(url, m), function(params) {
+    name <- sub("=.*", "", substring(params, 2L))
+    secret <- tolower(vapply(name, utils::URLdecode, "")) == "pass"
+    params[secret] <- paste0(substr(params[secret], 1L, 1L), name[secret], "=***")
+    params
+  })
+  url
 }
 
 #' @export

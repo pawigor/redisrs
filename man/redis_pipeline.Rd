@@ -23,7 +23,8 @@ Run several commands in one round trip
 \details{
 After a connection error, the whole pipeline is sent once more on
 a new connection. If the first attempt reached the server, commands such
-as \code{INCR} run twice.
+as \code{INCR} run twice. A pipeline that contains \code{MULTI} or \code{WATCH}, or that
+is sent while a transaction is open, is not sent a second time.
 }
 \examples{
 \dontshow{if (identical(Sys.getenv("REDISRS_EXAMPLES"), "true")) withAutoprint(\{ # examplesIf}

@@ -13,3 +13,4 @@
 ^tools/vendor-crates\.R$
 ^src/rust/deny\.toml$
 ^cran-comments\.md$
+^\.idea$

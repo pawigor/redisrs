@@ -1,6 +1,6 @@
 # redisrs
 
-redisrs is a Redis and Valkey client for R. It uses the Rust crate `redis-rs`. It supports TLS, Redis Cluster, pipelines, and IAM authentication for AWS ElastiCache and MemoryDB.
+redisrs is a Redis and Valkey client for R. It uses the Rust crate `redis-rs`. It supports TLS, Redis Cluster, pipelines, and IAM authentication for AWS ElastiCache.
 
 ## Installation
 

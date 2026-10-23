@@ -47,3 +47,34 @@ test_that("redact_url hides a password in a Unix socket URL", {
   )
   expect_equal(redact_url("unix:///tmp/r.sock?pass=a&db=2"), "unix:///tmp/r.sock?pass=***&db=2")
 })
+
+test_that("an error call does not show the password or token_fn", {
+  err <- tryCatch(
+    redis_connect("http://:secret@example.com", token_fn = function() "s3cret"),
+    error = identity
+  )
+  expect_s3_class(err, "redis_usage_error")
+  shown <- paste(deparse(conditionCall(err)), collapse = "")
+  expect_false(grepl("secret", shown))
+  expect_false(grepl("s3cret", shown))
+})
+
+test_that("a refused connection does not show the password", {
+  skip_on_cran()
+  err <- tryCatch(redis_connect("redis://:secret@127.0.0.1:1"), error = identity)
+  expect_s3_class(err, "redis_connection_error")
+  expect_false(grepl("secret", paste(deparse(conditionCall(err)), collapse = "")))
+})
+
+test_that("username and the token_fn result must be one string", {
+  expect_error(redis_connect("redis://127.0.0.1:1", username = 1), class = "redis_usage_error")
+  expect_error(redis_connect("redis://127.0.0.1:1", username = NA_character_), class = "redis_usage_error")
+  expect_error(redis_connect("redis://127.0.0.1:1", token_fn = function() 123), class = "redis_usage_error")
+  expect_error(redis_connect("redis://127.0.0.1:1", token_fn = function() c("a", "b")), class = "redis_usage_error")
+  expect_error(redis_connect("redis://:old@127.0.0.1:1", token_fn = function() NULL), class = "redis_usage_error")
+})
+
+test_that("redact_url hides a percent-encoded pass parameter", {
+  expect_equal(redact_url("redis+unix:///tmp/r.sock?%70ass=secret"), "redis+unix:///tmp/r.sock?%70ass=***")
+  expect_equal(redact_url("unix:///tmp/r.sock?db=1&PA%53S=x"), "unix:///tmp/r.sock?db=1&PA%53S=***")
+})
