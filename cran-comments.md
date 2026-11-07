@@ -1,9 +1,17 @@
+## Resubmission
+
+This is a resubmission. In response to the review:
+
+* All acronyms in the Description are now written out: Transport Layer Security (TLS), Amazon Web Services (AWS), Identity and Access Management (IAM).
+* The Description now explains the package functionality in more detail: connection types, commands and pipelines, reply conversion, storage of R objects, 'ElastiCache' token signing and reconnect behaviour.
+* Single quotes are now used only around software names ('Redis', 'Valkey', 'Rust', 'redis-rs', 'ElastiCache'). They were removed from 'AWS'.
+
 ## R CMD check results
 
 0 errors | 0 warnings | 1 note
 
 * This is a new release.
-* The NOTE lists "IAM" and "TLS" as possibly misspelled words. Both are standard abbreviations: IAM is the 'AWS' Identity and Access Management service, and TLS is Transport Layer Security. They are spelled correctly.
+* The NOTE may list "IAM", "TLS" and "AWS" as possibly misspelled words. They are abbreviations, written out in the Description.
 
 ## Rust
 

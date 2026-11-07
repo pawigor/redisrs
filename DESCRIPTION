@@ -1,14 +1,27 @@
 Package: redisrs
-Title: 'Redis' and 'Valkey' Client with TLS, Cluster and 'AWS' IAM Support
+Title: 'Redis' and 'Valkey' Client with Cluster and 'ElastiCache' Support
 Version: 0.1.0
 Authors@R: c(
     person("Igor", "Pavlichenko", , "pawigor@gmail.com", role = c("aut", "cre")),
     person("Authors of the dependency Rust crates", role = "cph",
            comment = "see LICENSE.note")
   )
-Description: A client for 'Redis' and 'Valkey' built on the 'Rust' crate
-    'redis-rs'. Supports TLS, cluster mode, pipelines and
-    'AWS ElastiCache' IAM authentication.
+Description: A client for the in-memory data stores 'Redis'
+    <https://redis.io/> and 'Valkey' <https://valkey.io/>, built on the
+    'Rust' library 'redis-rs' <https://github.com/redis-rs/redis-rs>.
+    Connections are opened from a URL and can use network sockets, Unix
+    domain sockets, Transport Layer Security (TLS) encryption, and 'Redis'
+    Cluster mode, in which keys are spread over several servers. Any server
+    command can be sent with arguments given as character, numeric, logical
+    or raw vectors, and several commands can be sent in one network round
+    trip as a pipeline. Replies are converted to R values, for example maps
+    to named lists. R objects can be stored in serialized form with an
+    optional expiry time and read back. For Amazon Web Services (AWS)
+    'ElastiCache', the package creates Identity and Access Management (IAM)
+    authentication tokens signed with the AWS Signature Version 4 method,
+    and makes a new token at every connect and reconnect. A lost connection
+    is reopened and the failed command is sent once more, except inside
+    transactions.
 License: MIT + file LICENSE
 Depends: R (>= 4.2)
 Suggests: 
